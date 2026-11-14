@@ -155,8 +155,16 @@ def build_pitchers(pit, salary):
     pit["ERA"] = round_half_up((9 * safe_div(pit["ER"], ip)), 2)
     pit["WHIP"] = round_half_up(safe_div(pit["BB"] + pit["H"], ip), 2)
 
+    # SP/RP from how he was actually used: SP if at least half his games were
+    # starts. (Spotrac's labels are unreliable here, e.g. Roki Sasaki has 23
+    # starts but is listed as RP.)
+    pit["Role"] = np.where(pit["GS"] >= 0.5 * pit["G"], "SP", "RP")
+    # Ohtani's G counts every game he played, including as a hitter, so the
+    # rule above misreads him. All 14 of his pitching appearances were starts.
+    pit.loc[pit["Player"] == "Shohei Ohtani", "Role"] = "SP"
+
     pit = attach_salary(pit, salary)
-    cols = (["Player", "Team", "Age", "G", "GS", "CG", "SHO", "IP", "IP_decimal",
+    cols = (["Player", "Team", "Role", "Age", "G", "GS", "CG", "SHO", "IP", "IP_decimal",
              "H", "ER", "K", "BB", "HR", "W", "L", "SV", "BS", "HLD", "ERA", "WHIP",
              "cap_total", "salary_team", "salary_position", "salary_name", "spotrac_id"])
     return pit[cols].sort_values("cap_total", ascending=False, na_position="last")
